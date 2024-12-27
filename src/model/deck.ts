@@ -10,7 +10,7 @@ export interface Card {
     number?: number;
 }
 
-// Define an array for all colors adsda
+// Define an array for all colors
 export const colors: Color[] = ['BLUE', 'GREEN', 'RED', 'YELLOW'];
 
 // Deck structure: A deck will hold an array of cards

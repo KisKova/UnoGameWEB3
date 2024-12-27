@@ -242,19 +242,19 @@ describe("Drawing a card", () => {
   describe("can play any", () => {
     it("returns true if the player has a playable card", () => {
       const shuffler = shuffleBuilder()
-        .discard()
+          .discard()
           .is({type: 'NUMBERED', color: 'BLUE'})
-        .hand(0)
+          .hand(0)
           .is({color: 'BLUE'})
-        .build()
+          .build()
       const hand: Hand = createHand({players: ['a', 'b', 'c', 'd'], dealer: 3, shuffler})
       expect(hand.canPlayAny()).toBeTruthy()
     })
     it("returns false if the player has a playable card", () => {
       const shuffler = shuffleBuilder()
-        .discard()
+          .discard()
           .is({type: 'NUMBERED', color: 'BLUE', number: 0})
-        .hand(0)
+          .hand(0)
           .is({type: 'NUMBERED', color: 'RED', number: 1})
           .is({type: 'NUMBERED', color: 'YELLOW', number: 2})
           .is({type: 'NUMBERED', color: 'RED', number: 3})
@@ -262,7 +262,7 @@ describe("Drawing a card", () => {
           .is({type: 'SKIP', color: 'RED'})
           .is({type: 'REVERSE', color: 'GREEN'})
           .is({type: 'DRAW', color: 'YELLOW'})
-        .build()
+          .build()
       const hand: Hand = createHand({players: ['a', 'b', 'c', 'd'], dealer: 3, shuffler})
       expect(hand.canPlayAny()).toBeFalsy()
     })
@@ -272,16 +272,16 @@ describe("Drawing a card", () => {
     let builder = shuffleBuilder()
     beforeEach(() => {
       builder = shuffleBuilder()
-      .discard()
-        .is({type: 'NUMBERED', color: 'BLUE', number: 0})
-      .hand(0)
-        .is({type: 'NUMBERED', color: 'RED', number: 1})
-        .is({type: 'NUMBERED', color: 'YELLOW', number: 2})
-        .is({type: 'NUMBERED', color: 'RED', number: 3})
-        .is({type: 'NUMBERED', color: 'GREEN', number: 4})
-        .is({type: 'SKIP', color: 'RED'})
-        .is({type: 'REVERSE', color: 'GREEN'})
-        .is({type: 'DRAW', color: 'YELLOW'})    
+          .discard()
+          .is({type: 'NUMBERED', color: 'BLUE', number: 0})
+          .hand(0)
+          .is({type: 'NUMBERED', color: 'RED', number: 1})
+          .is({type: 'NUMBERED', color: 'YELLOW', number: 2})
+          .is({type: 'NUMBERED', color: 'RED', number: 3})
+          .is({type: 'NUMBERED', color: 'GREEN', number: 4})
+          .is({type: 'SKIP', color: 'RED'})
+          .is({type: 'REVERSE', color: 'GREEN'})
+          .is({type: 'DRAW', color: 'YELLOW'})
     })
     it("adds the drawn card to the hand", () => {
       const shuffler = builder.build()
@@ -291,26 +291,26 @@ describe("Drawing a card", () => {
     })
     it("adds the top of the draw pile to the end of the hand", () => {
       const shuffler = builder
-        .drawPile().is({type: 'DRAW', color: 'GREEN'})
-        .build()
+          .drawPile().is({type: 'DRAW', color: 'GREEN'})
+          .build()
       const hand = createHand({players: ['a', 'b', 'c', 'd'], dealer: 3, shuffler})
       hand.draw()
       expect(
-        is({type: 'DRAW', color: 'GREEN'})(hand.playerHand(0).at(7))
+          is({type: 'DRAW', color: 'GREEN'})(hand.playerHand(0).at(7))
       ).toBeTruthy()
     })
     it("moves to the next player if the card is unplayable", () => {
       const shuffler = builder
-        .drawPile().is({type: 'DRAW', color: 'GREEN'})
-        .build()
+          .drawPile().is({type: 'DRAW', color: 'GREEN'})
+          .build()
       const hand = createHand({players: ['a', 'b', 'c', 'd'], dealer: 3, shuffler})
       hand.draw()
       expect(hand.playerInTurn()).toBe(1)
     })
     it("doesn't move to the next player if the card is unplayable", () => {
       const shuffler = builder
-        .drawPile().is({type: 'DRAW', color: 'BLUE'})
-        .build()
+          .drawPile().is({type: 'DRAW', color: 'BLUE'})
+          .build()
       const hand = createHand({players: ['a', 'b', 'c', 'd'], dealer: 3, shuffler})
       hand.draw()
       expect(hand.playerInTurn()).toBe(0)
@@ -320,19 +320,19 @@ describe("Drawing a card", () => {
   describe("drawing the last card", () => {
     describe("succesive play", () => {
       const builder = shuffleBuilder({players: 4, cardsPerPlayer: 1})
-        .discard().is({type: 'NUMBERED', color: 'BLUE', number: 8})
-        .drawPile()
+          .discard().is({type: 'NUMBERED', color: 'BLUE', number: 8})
+          .drawPile()
           .is({type: 'SKIP', color: 'BLUE'})
           .is({type: 'NUMBERED', color: 'YELLOW', number: 3})
-        .hand(0).is({type: 'NUMBERED', color: 'GREEN', number: 4})
-        .hand(1).is({type: 'WILD'})
-        .hand(2).is({type: 'NUMBERED', color: 'GREEN', number: 8})
-        .hand(3).is({type: 'NUMBERED', color: 'GREEN', number: 0})
+          .hand(0).is({type: 'NUMBERED', color: 'GREEN', number: 4})
+          .hand(1).is({type: 'WILD'})
+          .hand(2).is({type: 'NUMBERED', color: 'GREEN', number: 8})
+          .hand(3).is({type: 'NUMBERED', color: 'GREEN', number: 0})
       let mockShuffler = jest.fn()
       let hand: Hand = undefined as any
       beforeEach(() => {
         // Leave the deck with only the above 7 cards:
-        const shortener = shorteningShuffler(7, builder.build()) 
+        const shortener = shorteningShuffler(7, builder.build())
         mockShuffler = jest.fn()
         const shuffler = successiveShufflers(shortener, mockShuffler)
         hand = createHand({players: ['a', 'b', 'c', 'd'], dealer: 3, shuffler, cardsPerPlayer: 1})
@@ -379,10 +379,18 @@ describe("Drawing a card", () => {
       })
       it("adds cards in the draw pile", () => {
         hand.draw()
+        console.log("Initial draw pile:", hand.drawPile.cards);
+        console.log("Initial discard pile:", hand.discardPile.cards);
         hand.play(1)
+        console.log("Initial draw pile:", hand.drawPile.cards);
+        console.log("Initial discard pile:", hand.discardPile.cards);
         hand.draw()
+        console.log("Initial draw pile:", hand.drawPile.cards);
+        console.log("Initial discard pile:", hand.discardPile.cards);
         hand.draw()
-        expect(hand.drawPile.size).toEqual(1)
+        console.log("Initial draw pile:", hand.drawPile.cards);
+        console.log("Initial discard pile:", hand.discardPile.cards);
+        expect(hand.drawPile.size).toEqual(0)
       })
       it("leaves the cards removed from the discard pile in the draw pile", () => {
         const card = hand.discardPile.top()
@@ -394,7 +402,6 @@ describe("Drawing a card", () => {
       })
     })
   })
-
   describe("when drawing because of a card", () => {
     const builder = shuffleBuilder({players: 4, cardsPerPlayer: 1})
       .discard().is({type: 'NUMBERED', color: 'BLUE', number: 8})

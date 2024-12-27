@@ -6,9 +6,12 @@ export interface Hand {
     dealer: number
     drawPile: Deck
     discardPile: Deck
+    gameEnded: boolean
     playerInTurn(): number
+    lastPlayerInAction(): number
     player(index: number): string
     playerHand(index: number): Card[]
+    lastAction(index: number): (string | null)[]
     canPlay(cardIndex: number): boolean
     play(cardIndex: number, color?: string): Card
     draw(): void
@@ -17,6 +20,7 @@ export interface Hand {
     catchUnoFailure(args: { accuser: number; accused: number }): boolean
     hasEnded(): boolean
     winner(): number | undefined
+    score(): number | undefined
 }
 
 export function createHand(
@@ -24,7 +28,26 @@ export function createHand(
     dealer: number,
     shuffler: Shuffler<Card> = standardShuffler,
     cardsPerPlayer: number = 7
-): Hand {
+): {
+    play: (cardIndex: number, color?: string) => Card
+    drawPile: Deck
+    discardPile: Deck
+    playerCount: number
+    score: () => (number | undefined)
+    playerInTurn: () => number
+    canPlay: (cardIndex: number) => boolean
+    sayUno: (playerIndex: number) => void
+    canPlayAny: () => boolean
+    draw: () => void
+    catchUnoFailure: (args: { accuser: number; accused: number }) => boolean
+    hasEnded: () => boolean
+    gameEnded: boolean
+    winner: () => (number | undefined)
+    lastAction: (index: number) => string | null
+    playerHand: (index: number) => Card[]
+    dealer: number
+    player: (index: number) => string
+} {
     if (players.length < 2 || players.length > 10) {
         throw new Error("Player count must be between 2 and 10.");
     }
@@ -34,10 +57,13 @@ export function createHand(
 
     let playDirection = 1
     const unoCalled = new Set<number>() // Tracks which players have declared "UNO"
-    let gameEnded = false
+    let gameEnded: boolean = false
     let winningPlayer: number | undefined
+    let currentTurn: number | undefined
+    let previousTurn: number | undefined
+    let scoreOfWinner: number | undefined
 
-    const lastAction: (string | null)[] = Array(players.length).fill(null);
+    const lastActions: (string | null)[] = Array(players.length).fill(null);
 
     const deck = createInitialDeck()
     deck.shuffle(shuffler)
@@ -76,13 +102,35 @@ export function createHand(
     drawPile.cards = [...deck.cards]
     drawPile.size = drawPile.cards.length
 
-    let currentTurn = (dealer + 1) % players.length;
+    previousTurn = dealer % players.length
+    currentTurn = (dealer + 1) % players.length
     if (topDiscard && topDiscard.type === 'REVERSE') {
         currentTurn = (dealer - 1 + players.length) % players.length;
     } else if (topDiscard && topDiscard.type === 'SKIP') {
         currentTurn = (dealer + 2) % players.length;
     } else if (topDiscard && topDiscard.type === 'DRAW') {
         playerHands[currentTurn].push(drawPile.deal()!, drawPile.deal()!);
+    }
+
+    function score() {
+        if(gameEnded) {
+            scoreOfWinner = 0
+            for(let i = 0; i < players.length; i++) {
+                for(let j = 0; j < playerHands[i].length; j++) {
+                    let playerHand = playerHands[i]
+                    let card = playerHand[j]
+                    if (card.type === 'SKIP' || card.type === 'REVERSE' || card.type === 'DRAW') {
+                        scoreOfWinner += 20
+                    } else if (card.type === 'NUMBERED') {
+                        scoreOfWinner += card.number
+                    } else if (card.type === 'WILD' || card.type === 'WILD DRAW') {
+                        scoreOfWinner += 50
+                    }
+                }
+            }
+            return scoreOfWinner
+        }
+        return undefined
     }
 
     function playerInTurn() {
@@ -103,7 +151,17 @@ export function createHand(
         return playerHands[index]
     }
 
+    function lastAction(index: number) {
+        if (index < 0 || index >= playerHands.length) {
+            throw new Error("Player index out of bounds.")
+        }
+        return lastActions[index]
+    }
+
     function canPlay(cardIndex: number): boolean {
+        if(gameEnded) {
+            return false;
+        }
         if (cardIndex < 0) {
             return false
         }
@@ -130,7 +188,11 @@ export function createHand(
     }
 
     function play(cardIndex: number, color?: string): Card {
+        lastActions[previousTurn] = null
+        previousTurn = currentTurn
         const playerHand = playerHands[currentTurn]
+
+        if(gameEnded) throw new Error("The round has been finished.")
 
         if (cardIndex < 0 || cardIndex >= playerHand.length) {
             throw new Error("Invalid card index.")
@@ -144,7 +206,16 @@ export function createHand(
         playerHand.splice(cardIndex, 1)
         discardPile.cards.push(card)
 
-        lastAction[currentTurn] = "play";
+        if(playerHand.length == 0){
+            gameEnded = true
+            winningPlayer = currentTurn
+        }
+
+        lastActions[currentTurn] = "play"
+
+        //Delete the action of the previous player
+        const previousPlayer = (currentTurn - playDirection + players.length) % players.length
+        lastActions[previousPlayer] = null
 
         // Handle special cards
         if (card.type === 'SKIP') {
@@ -204,17 +275,28 @@ export function createHand(
             } else {
                 console.warn("Cannot set color: either topDiscardCard is missing or color is not a valid color.")
             }
-
-            lastAction[currentTurn] = "play";
-
         } else {
             currentTurn = (currentTurn + playDirection + players.length) % players.length
         }
+
+        /*
+        if(playerHands[previousTurn].length == 0) {
+            for(let i = 0; i < players.length; i++) {
+                if(playerHands[i].length == 0) {
+                    gameEnded = true
+                    winningPlayer = i
+                    currentTurn = undefined
+                }
+            }
+        }*/
 
         return card;
     }
 
     function draw(): void {
+        if(gameEnded) throw new Error("Round has been finished")
+        lastActions[previousTurn] = null
+        previousTurn = currentTurn
         let card = drawPile.deal()
         if (card) {  // Ensure a card is available
             playerHands[currentTurn].push(card)
@@ -234,22 +316,29 @@ export function createHand(
             //console.warn("Draw pile is empty; cannot deal card.");
         }
 
+        lastActions[currentTurn] = "draw";
+
+        //Ez nem jó valszeg
         if (!canPlay(playerHands[currentTurn].length - 1)) {
             currentTurn = (currentTurn + playDirection + players.length) % players.length;
         }
-
-        lastAction[currentTurn] = "draw";
     }
 
     function canPlayAny(): boolean {
+        if(gameEnded) {
+            return false;
+        }
         return playerHands[currentTurn].some((_, i) => canPlay(i));
     }
 
     function sayUno(playerIndex: number): void {
-        if (playerIndex < 0 || playerIndex >= players.length) throw new Error("Player index out of bounds.");
+        if (playerIndex < 0 || playerIndex >= players.length || hasEnded()) throw new Error("Player index out of bounds.");
         //if (playerHands[playerIndex].length !== 1) throw new Error("Player can only say UNO with one card.");
+        if (playerHands[playerIndex].length == 1) {
+            unoCalled.add(playerIndex);
+        }
 
-        unoCalled.add(playerIndex);
+
     }
 
     function catchUnoFailure(args: { accuser: number; accused: number }): boolean {
@@ -263,31 +352,47 @@ export function createHand(
         if (playerHands[accused].length !== 1 || unoCalled.has(accused)) return false;
 
         // Get the next player index to check for subsequent actions
-        const nextPlayerIndex = (accused + 1) % players.length;
+        //const previousPlayer = (currentTurn - playDirection + players.length) % players.length;
 
         // Check if the next player has already played or drawn
-        if (lastAction[nextPlayerIndex]) {
+        if (!lastActions[accused]) {
             return false;  // Accusation fails because the next player already acted
         }
 
         // If no actions have been taken by the next player, apply the penalty
-        const penaltyCards = [];
         for (let i = 0; i < 4; i++) {
-            const card = drawPile.deal();
-            if (card) playerHands[accused].push(card);
+            let card = drawPile.deal();
+            if (card) {
+                playerHands[accused].push(card)
+            } else {
+                // Handle empty draw pile case
+                let newStartCard = discardPile.cards.pop()
+                discardPile.shuffle(shuffler)
+                drawPile.cards = [...discardPile.cards]
+                drawPile.size = drawPile.cards.length
+
+                discardPile.cards = [newStartCard!]
+                discardPile.size = discardPile.cards.length
+                card = drawPile.deal()
+                if (card) {
+                    playerHands[accused].push(card)
+                }
+                //console.warn("Draw pile is empty; cannot deal card.");
+            }
         }
 
-        //playerHands[accused].push(...penaltyCards);
         return true;
     }
-
 
     function hasEnded(): boolean {
         return gameEnded;
     }
 
     function winner(): number | undefined {
-        return gameEnded ? winningPlayer : undefined;
+        if(gameEnded) {
+            return winningPlayer
+        }
+        return undefined;
     }
 
     return {
@@ -295,9 +400,12 @@ export function createHand(
         dealer: dealer,
         drawPile: drawPile,
         discardPile: discardPile,
+        gameEnded: gameEnded,
         playerInTurn,
         player,
+        score,
         playerHand,
+        lastAction,
         canPlay,
         play,
         draw,
