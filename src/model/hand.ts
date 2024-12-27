@@ -8,10 +8,9 @@ export interface Hand {
     discardPile: Deck
     gameEnded: boolean
     playerInTurn(): number
-    lastPlayerInAction(): number
     player(index: number): string
     playerHand(index: number): Card[]
-    lastAction(index: number): (string | null)[]
+    lastAction(index: number): string | null
     canPlay(cardIndex: number): boolean
     play(cardIndex: number, color?: string): Card
     draw(): void
@@ -28,26 +27,7 @@ export function createHand(
     dealer: number,
     shuffler: Shuffler<Card> = standardShuffler,
     cardsPerPlayer: number = 7
-): {
-    play: (cardIndex: number, color?: string) => Card
-    drawPile: Deck
-    discardPile: Deck
-    playerCount: number
-    score: () => (number | undefined)
-    playerInTurn: () => number
-    canPlay: (cardIndex: number) => boolean
-    sayUno: (playerIndex: number) => void
-    canPlayAny: () => boolean
-    draw: () => void
-    catchUnoFailure: (args: { accuser: number; accused: number }) => boolean
-    hasEnded: () => boolean
-    gameEnded: boolean
-    winner: () => (number | undefined)
-    lastAction: (index: number) => string | null
-    playerHand: (index: number) => Card[]
-    dealer: number
-    player: (index: number) => string
-} {
+): Hand {
     if (players.length < 2 || players.length > 10) {
         throw new Error("Player count must be between 2 and 10.");
     }
@@ -395,15 +375,14 @@ export function createHand(
         return undefined;
     }
 
-    return {
+    return <Hand>{
         playerCount: players.length,
-        dealer: dealer,
-        drawPile: drawPile,
-        discardPile: discardPile,
-        gameEnded: gameEnded,
+        dealer,
+        drawPile,
+        discardPile,
+        gameEnded,
         playerInTurn,
         player,
-        score,
         playerHand,
         lastAction,
         canPlay,
@@ -413,6 +392,7 @@ export function createHand(
         sayUno,
         catchUnoFailure,
         hasEnded,
-        winner
+        winner,
+        score,
     };
 }
