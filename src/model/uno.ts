@@ -5,14 +5,16 @@ import {createHand} from "./hand";
 
 export interface Game {
     playerCount: number
-    targetScore: number
-    currentHand(): Hand | undefined
-    winner(): number | undefined
+    targetScore: number //
+    currentHand(): Hand | undefined //
+    winner(): number | undefined //
     score(playerIndex: number): number
     player(index: number): string
-    startNewHand(): void
-    endGame(): void
+    startNewHand(): void //
+    endGame(): void //
     updateScores(): void
+    dealer: number
+    players: string[]
 }
 
 export function createGame(
@@ -21,18 +23,7 @@ export function createGame(
     shuffler: Shuffler<Card> = standardShuffler,
     cardsPerPlayer: number = 7,
     dealer: number
-): {
-    players: string[]
-    targetScore?: number
-    shuffler?: Shuffler<Card>
-    cardsPerPlayer?: number
-    dealer?: number
-    startNewHand: () => void
-    endGame: () => boolean
-    currentHand: () => Hand
-    winner: () => number | undefined
-
-} {
+): Game {
     if (players.length < 2) {
         throw new Error("Game requires at least 2 players.")
     }
@@ -139,15 +130,17 @@ export function createGame(
     }*/
 
 
-    return {
+    return <Game>{
         playerCount: players.length,
         targetScore,
         currentHand,
         winner,
-        updateScores,
         score,
         player,
         startNewHand,
-        endGame
+        endGame,
+        updateScores,
+        dealer,
+        players,
     }
 }
