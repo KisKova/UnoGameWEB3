@@ -1,4 +1,4 @@
-import {Shuffler} from "../utils/random_utils";
+import type { Shuffler } from "../utils/random_utils";
 
 export type Color = 'RED' | 'GREEN' | 'BLUE' | 'YELLOW';
 export type Type = 'NUMBERED' | 'SKIP' | 'REVERSE' | 'DRAW' | 'WILD' | 'WILD DRAW';

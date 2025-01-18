@@ -1,5 +1,7 @@
-import {Card, Deck, createInitialDeck, createEmptyPile} from './deck';
-import { Shuffler, standardShuffler } from '../utils/random_utils';
+import type {Card, Deck } from './deck';
+import { createInitialDeck, createEmptyPile} from './deck';
+import type { Shuffler } from '../utils/random_utils';
+import { standardShuffler } from '../utils/random_utils';
 
 export interface Hand {
     playerCount: number
@@ -97,12 +99,12 @@ export function createHand(
             scoreOfWinner = 0
             for(let i = 0; i < players.length; i++) {
                 for(let j = 0; j < playerHands[i].length; j++) {
-                    let playerHand = playerHands[i]
-                    let card = playerHand[j]
+                    const playerHand = playerHands[i]
+                    const card = playerHand[j]
                     if (card.type === 'SKIP' || card.type === 'REVERSE' || card.type === 'DRAW') {
                         scoreOfWinner += 20
                     } else if (card.type === 'NUMBERED') {
-                        scoreOfWinner += card.number
+                        if(card.number != undefined) scoreOfWinner += card.number
                     } else if (card.type === 'WILD' || card.type === 'WILD DRAW') {
                         scoreOfWinner += 50
                     }
@@ -145,12 +147,15 @@ export function createHand(
         if (cardIndex < 0) {
             return false
         }
+
+        if(currentTurn == undefined) return false
+
         const card = playerHands[currentTurn][cardIndex]
         const topCard = discardPile.top()
 
         if (!topCard) return true
 
-        if (card.type === "WILD DRAW") {
+        if (card.type == 'WILD DRAW') {
             for (let i = 0; i < playerHands[currentTurn].length; i++) {
                 if (topCard.color === playerHands[currentTurn][i].color && playerHands[currentTurn][i].color != undefined) {
                     return false
@@ -159,15 +164,18 @@ export function createHand(
         }
 
         return (
-            card.color === topCard.color ||
-            card.number === topCard.number && card.number != null ||
-            card.type === topCard.type && card.type != 'NUMBERED' ||
-            card.type === 'WILD' ||
-            card.type === 'WILD DRAW'
+            card.color == topCard.color ||
+            card.number == topCard.number && card.number != undefined ||
+            card.type == topCard.type && card.type != 'NUMBERED' ||
+            card.type == 'WILD' ||
+            card.type == 'WILD DRAW'
         )
     }
 
     function play(cardIndex: number, color?: string): Card {
+        if(previousTurn == undefined || currentTurn == undefined) {
+            throw new Error("The previous or the current turn is undefined")
+        }
         lastActions[previousTurn] = null
         previousTurn = currentTurn
         const playerHand = playerHands[currentTurn]
@@ -275,6 +283,9 @@ export function createHand(
 
     function draw(): void {
         if(gameEnded) throw new Error("Round has been finished")
+        if(previousTurn == undefined || currentTurn == undefined) {
+            throw new Error("The previous or the current turn is undefined")
+        }
         lastActions[previousTurn] = null
         previousTurn = currentTurn
         let card = drawPile.deal()
@@ -282,7 +293,7 @@ export function createHand(
             playerHands[currentTurn].push(card)
         } else {
             // Handle empty draw pile case
-            let newStartCard = discardPile.cards.pop()
+            const newStartCard = discardPile.cards.pop()
             discardPile.shuffle(shuffler)
             drawPile.cards = [...discardPile.cards]
             drawPile.size = drawPile.cards.length
@@ -298,14 +309,13 @@ export function createHand(
 
         lastActions[currentTurn] = "draw";
 
-        //Ez nem jó valszeg
         if (!canPlay(playerHands[currentTurn].length - 1)) {
             currentTurn = (currentTurn + playDirection + players.length) % players.length;
-        }
+        } //else play(playerHands[currentTurn].length - 1)
     }
 
     function canPlayAny(): boolean {
-        if(gameEnded) {
+        if(gameEnded || currentTurn == undefined) {
             return false;
         }
         return playerHands[currentTurn].some((_, i) => canPlay(i));
@@ -346,7 +356,7 @@ export function createHand(
                 playerHands[accused].push(card)
             } else {
                 // Handle empty draw pile case
-                let newStartCard = discardPile.cards.pop()
+                const newStartCard = discardPile.cards.pop()
                 discardPile.shuffle(shuffler)
                 drawPile.cards = [...discardPile.cards]
                 drawPile.size = drawPile.cards.length

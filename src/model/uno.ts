@@ -1,7 +1,9 @@
-import * as Hand from './hand'
-import {Shuffler, standardShuffler} from '../utils/random_utils'
-import { Card } from './deck'
-import {createHand} from "./hand";
+//import * as Hand from './hand'
+import type { Shuffler } from '../utils/random_utils'
+//import { standardShuffler } from '../utils/random_utils'
+import type { Card } from './deck'
+import type { Hand } from "./hand";
+import { createHand } from "./hand";
 
 export interface Game {
     playerCount: number
@@ -9,6 +11,7 @@ export interface Game {
     currentHand(): Hand | undefined //
     winner(): number | undefined //
     score(playerIndex: number): number
+    scores: number[]
     player(index: number): string
     startNewHand(): void //
     endGame(): void //
@@ -19,10 +22,10 @@ export interface Game {
 
 export function createGame(
     players: string[],
-    targetScore: number,
-    shuffler: Shuffler<Card> = standardShuffler,
-    cardsPerPlayer: number = 7,
-    dealer: number
+    targetScore: number | undefined,
+    shuffler: Shuffler<Card> | undefined,
+    cardsPerPlayer: number | undefined,
+    dealer: number | undefined
 ): Game {
     if (players.length < 2) {
         throw new Error("Game requires at least 2 players.")
@@ -43,6 +46,7 @@ export function createGame(
 
     // Create the initial hand
     function startNewHand() {
+        if (dealer == undefined) dealer = 0
         let hand:Hand = createHand(players, dealer, shuffler, cardsPerPlayer)
         hands.push(hand)
         currentHandIndex = hands.length - 1
@@ -63,7 +67,7 @@ export function createGame(
 
         // Check if anyone has won
         for (let i = 0; i < players.length; i++) {
-            if (scores[i] >= targetScore) {
+            if (targetScore != undefined && scores[i] >= targetScore) {
                 gameWinner = i
                 gameEnded = true
                 break
@@ -136,6 +140,7 @@ export function createGame(
         currentHand,
         winner,
         score,
+        scores,
         player,
         startNewHand,
         endGame,
